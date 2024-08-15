@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Dramatic Nexus Explosion</title>
+    <title>Hardest Game Ever</title>
     <style>
         body, html {
             margin: 0;
@@ -56,7 +56,7 @@
         let isExploded = false;
         let explosionTime = 0;
         let shockwave, secondaryShockwave;
-        let audioContext, explosionSounds = [];
+        let audioContext, explosionSound;
 
         init();
         animate();
@@ -181,24 +181,15 @@
 
             // Initialize audio
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const soundUrls = [
-                'https://cdn.freesound.org/previews/587/587183_7724198-lq.mp3',
-                'https://cdn.freesound.org/previews/587/587184_7724198-lq.mp3',
-                'https://cdn.freesound.org/previews/514/514133_2477376-lq.mp3',
-                'https://cdn.freesound.org/previews/514/514132_2477376-lq.mp3'
-            ];
-            
-            soundUrls.forEach(url => {
-                const request = new XMLHttpRequest();
-                request.open('GET', url, true);
-                request.responseType = 'arraybuffer';
-                request.onload = function() {
-                    audioContext.decodeAudioData(request.response, function(buffer) {
-                        explosionSounds.push(buffer);
-                    });
-                }
-                request.send();
-            });
+            const request = new XMLHttpRequest();
+            request.open('GET', 'https://github.com/FearOfPixelation/hardestgamever/raw/main/big-explosion.mp3', true);
+            request.responseType = 'arraybuffer';
+            request.onload = function() {
+                audioContext.decodeAudioData(request.response, function(buffer) {
+                    explosionSound = buffer;
+                });
+            }
+            request.send();
 
             window.addEventListener('resize', onWindowResize, false);
             document.getElementById('canvas').addEventListener('click', onCanvasClick);
@@ -275,7 +266,7 @@
                 shockwave.material.opacity = 0.5;
                 secondaryShockwave.material.opacity = 0.5;
                 showVictoryMessage();
-                playExplosionSounds();
+                playExplosionSound();
             }
         }
 
@@ -292,17 +283,12 @@
             victoryElement.style.opacity = '1';
         }
 
-        function playExplosionSounds() {
-            if (explosionSounds.length > 0) {
-                const numberOfBooms = 3 + Math.floor(Math.random() * 3);  // 3 to 5 booms
-                for (let i = 0; i < numberOfBooms; i++) {
-                    setTimeout(() => {
-                        const sound = audioContext.createBufferSource();
-                        sound.buffer = explosionSounds[Math.floor(Math.random() * explosionSounds.length)];
-                        sound.connect(audioContext.destination);
-                        sound.start(0);
-                    }, i * 200);  // Stagger the booms by 200ms
-                }
+        function playExplosionSound() {
+            if (explosionSound) {
+                const source = audioContext.createBufferSource();
+                source.buffer = explosionSound;
+                source.connect(audioContext.destination);
+                source.start(0);
             }
         }
     </script>

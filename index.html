@@ -69,6 +69,9 @@
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
 
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
             geometry = new THREE.IcosahedronGeometry(1, 4);
             material = new THREE.ShaderMaterial({
                 vertexShader: `
@@ -93,18 +96,27 @@
                     uniform float explosionFactor;
 
                     void main() {
-                        vec3 baseColor = 0.8 + 0.2 * cos(time + vPosition.xyx + vec3(0, 2, 4));
+                        vec3 baseColor = vec3(1.0, 0.8, 0.5);
+                        vec3 pulseColor = 0.5 + 0.5 * cos(time + vPosition.xyx + vec3(0, 2, 4));
+                        vec3 color = mix(baseColor, pulseColor, 0.5);
+                        
+                        float glow = pow(0.9 - dot(vNormal, vec3(0, 0, 1.0)), 3.0);
+                        color += vec3(1.0, 0.8, 0.3) * glow;
+                        
                         vec3 explosionColor = vec3(1.0, 0.5, 0.0);
-                        vec3 color = mix(baseColor, explosionColor, explosionFactor);
-                        float intensity = pow(0.7 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
-                        gl_FragColor = vec4(color, 1.0 - explosionFactor) * intensity;
+                        color = mix(color, explosionColor, explosionFactor);
+                        
+                        color *= 1.5;
+                        
+                        gl_FragColor = vec4(color, 1.0 - explosionFactor);
                     }
                 `,
                 uniforms: {
                     time: { value: 0 },
                     explosionFactor: { value: 0 }
                 },
-                transparent: true
+                transparent: true,
+                blending: THREE.AdditiveBlending
             });
 
             mesh = new THREE.Mesh(geometry, material);

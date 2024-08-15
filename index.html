@@ -56,7 +56,6 @@
         let isExploded = false;
         let explosionTime = 0;
         let shockwave, secondaryShockwave;
-        let audioContext, explosionSound;
 
         init();
         animate();
@@ -69,19 +68,14 @@
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
             geometry = new THREE.IcosahedronGeometry(1, 4);
             material = new THREE.ShaderMaterial({
                 vertexShader: `
-                    varying vec3 vNormal;
                     varying vec3 vPosition;
                     uniform float time;
                     uniform float explosionFactor;
                     
                     void main() {
-                        vNormal = normal;
                         vPosition = position;
                         vec3 p = position;
                         p += 0.1 * sin(p.x * 10.0 + time) * sin(p.y * 10.0 + time) * sin(p.z * 10.0 + time) * normal;
@@ -90,23 +84,19 @@
                     }
                 `,
                 fragmentShader: `
-                    varying vec3 vNormal;
                     varying vec3 vPosition;
                     uniform float time;
                     uniform float explosionFactor;
 
                     void main() {
-                        vec3 baseColor = vec3(1.0, 0.8, 0.5);
-                        vec3 pulseColor = 0.5 + 0.5 * cos(time + vPosition.xyx + vec3(0, 2, 4));
-                        vec3 color = mix(baseColor, pulseColor, 0.5);
-                        
-                        float glow = pow(0.9 - dot(vNormal, vec3(0, 0, 1.0)), 3.0);
-                        color += vec3(1.0, 0.8, 0.3) * glow;
-                        
-                        vec3 explosionColor = vec3(1.0, 0.5, 0.0);
+                        vec3 baseColor = vec3(1.0, 0.9, 0.7);  // Very bright warm color
+                        vec3 pulseColor = 0.8 + 0.2 * cos(time + vPosition.xyx + vec3(0, 2, 4));
+                        vec3 color = mix(baseColor, pulseColor, 0.2);  // Subtle pulse effect
+                        vec3 explosionColor = vec3(1.0, 0.8, 0.5);
                         color = mix(color, explosionColor, explosionFactor);
                         
-                        color *= 1.5;
+                        // Increase overall brightness
+                        color = clamp(color * 1.2, 0.0, 1.0);
                         
                         gl_FragColor = vec4(color, 1.0 - explosionFactor);
                     }
@@ -115,8 +105,7 @@
                     time: { value: 0 },
                     explosionFactor: { value: 0 }
                 },
-                transparent: true,
-                blending: THREE.AdditiveBlending
+                transparent: true
             });
 
             mesh = new THREE.Mesh(geometry, material);
@@ -190,18 +179,6 @@
             secondaryShockwave.material.color.setHex(0xFF5500);
             secondaryShockwave.visible = false;
             scene.add(secondaryShockwave);
-
-            // Initialize audio
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const request = new XMLHttpRequest();
-            request.open('GET', 'https://github.com/FearOfPixelation/hardestgamever/raw/main/big-explosion.mp3', true);
-            request.responseType = 'arraybuffer';
-            request.onload = function() {
-                audioContext.decodeAudioData(request.response, function(buffer) {
-                    explosionSound = buffer;
-                });
-            }
-            request.send();
 
             window.addEventListener('resize', onWindowResize, false);
             document.getElementById('canvas').addEventListener('click', onCanvasClick);
@@ -278,7 +255,6 @@
                 shockwave.material.opacity = 0.5;
                 secondaryShockwave.material.opacity = 0.5;
                 showVictoryMessage();
-                playExplosionSound();
             }
         }
 
@@ -293,15 +269,6 @@
                 victoryElement.style.color = "#FFD700";  // Default gold color
             }
             victoryElement.style.opacity = '1';
-        }
-
-        function playExplosionSound() {
-            if (explosionSound) {
-                const source = audioContext.createBufferSource();
-                source.buffer = explosionSound;
-                source.connect(audioContext.destination);
-                source.start(0);
-            }
         }
     </script>
 </body>
